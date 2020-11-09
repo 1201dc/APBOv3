@@ -1,8 +1,8 @@
 //
 //  GameViewController.swift
-//  APBOv3
+//  Zaptastic
 //
-//  Created by 90306670 on 11/9/20.
+//  Created by 90306670 on 9/9/20.
 //  Copyright © 2020 Dhruv Chowdhary. All rights reserved.
 //
 
@@ -19,18 +19,22 @@ class GameViewController: UIViewController {
             // Load the SKScene from 'GameScene.sks'
             if let scene = SKScene(fileNamed: "GameScene") {
                 // Set the scale mode to scale to fit the window
-                scene.scaleMode = .aspectFill
+                scene.scaleMode = .fill
                 
                 // Present the scene
                 view.presentScene(scene)
+
             }
             
             view.ignoresSiblingOrder = true
             
+            view.preferredFramesPerSecond = 120
             view.showsFPS = true
             view.showsNodeCount = true
+            view.showsPhysics = true
+            }
         }
-    }
+    
 
     override var shouldAutorotate: Bool {
         return true
