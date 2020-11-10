@@ -9,6 +9,11 @@
 import CoreMotion
 import SpriteKit
 
+let maxHealth = 100
+let healthBarWidth: CGFloat = 40
+let healthBarHeight: CGFloat = 4
+
+
 enum CollisionType: UInt32 {
     case player = 1
     case playerWeapon = 2
@@ -19,6 +24,10 @@ enum CollisionType: UInt32 {
 class GameScene: SKScene, SKPhysicsContactDelegate {
     let motionManager = CMMotionManager()
     let player = SKSpriteNode(imageNamed: "player")
+    let turnButton = SKSpriteNode(imageNamed: "button")
+    let shootButton = SKSpriteNode(imageNamed: "button")
+    
+    let thruster1 = SKEmitterNode(fileNamed: "Thrusters")
     
     let waves = Bundle.main.decode([Wave].self, from: "waves.json")
     let enemyTypes = Bundle.main.decode([EnemyType].self, from: "enemy-types.json")
@@ -46,19 +55,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     
     override func didMove(to view: SKView) {
-        physicsWorld.gravity = .zero
-        physicsWorld.contactDelegate = self
-        setupLabels()
-        if let particles = SKEmitterNode(fileNamed: "Starfield") {
-            particles.position = CGPoint(x: 1080, y: 0)
-            particles.advanceSimulationTime(60)
-            particles.zPosition = -1
-            addChild(particles)
-        }
         
-        player.name = "player"
-        player.position.x = frame.minX+75
-        player.zPosition = 1
+        size = view.bounds.size
+           
+           backgroundColor = SKColor(red: 14.0/255, green: 23.0/255, blue: 57.0/255, alpha: 1)
+           
+        
+               
+           physicsWorld.gravity = .zero
+           physicsWorld.contactDelegate = self
+           
+           if let particles = SKEmitterNode(fileNamed: "Starfield") {
+                   particles.position = CGPoint(x: frame.midX, y: frame.midY)
+           //      particles.advanceSimulationTime(60)
+                   particles.zPosition = -1
+                   addChild(particles)
+           }
+        
+
+        player.name = "apbo"
+           player.position.x = size.width/2
+             player.position.y = size.height/2
+             player.zPosition = 1
         addChild(player)
         
         player.physicsBody = SKPhysicsBody(texture: player.texture!, size: player.texture!.size())
@@ -66,6 +84,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player.physicsBody?.collisionBitMask = CollisionType.enemy.rawValue | CollisionType.enemyWeapon.rawValue
         player.physicsBody?.contactTestBitMask = CollisionType.enemy.rawValue | CollisionType.enemyWeapon.rawValue
         player.physicsBody?.isDynamic = false
+        
+        
+        turnButton.name = "btn"
+        turnButton.size.height = 100
+        turnButton.size.width = 100
+        turnButton.zPosition = 2
+        turnButton.position = CGPoint(x: self.frame.maxX-110,y: self.frame.minY+70)
+        self.addChild(turnButton)
+                
+        shootButton.name = "shoot"
+        shootButton.size.height = 100
+        shootButton.size.width = 100
+        shootButton.zPosition = 2
+        shootButton.position = CGPoint(x: self.frame.minX+110 ,y: self.frame.minY+70)
+        self.addChild(shootButton)
+        
+
+          thruster1?.zPosition = 1
+        //  thruster1?.targetNode = self
+
+         // player.addChild(thruster1!)
+          addChild(thruster1!)
+        
         
         motionManager.startAccelerometerUpdates()
     }
@@ -139,6 +180,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
     }
+   
+    
+    func updateHealthBar(_ node: SKSpriteNode, withHealthPoints hp: Int) {
+      let barSize = CGSize(width: healthBarWidth, height: healthBarHeight);
+      
+      let fillColor = UIColor(red: 113.0/255, green: 202.0/255, blue: 53.0/255, alpha:1)
+      let borderColor = UIColor(red: 35.0/255, green: 28.0/255, blue: 40.0/255, alpha:1)
+      
+      // create drawing context
+      UIGraphicsBeginImageContextWithOptions(barSize, false, 0)
+      guard let context = UIGraphicsGetCurrentContext() else { return }
+      
+      // draw the outline for the health bar
+      borderColor.setStroke()
+      let borderRect = CGRect(origin: CGPoint.zero, size: barSize)
+      context.stroke(borderRect, width: 1)
+      
+      // draw the health bar with a colored rectangle
+      fillColor.setFill()
+      let barWidth = (barSize.width - 1) * CGFloat(hp) / CGFloat(maxHealth)
+      let barRect = CGRect(x: 0.5, y: 0.5, width: barWidth, height: barSize.height - 1)
+      context.fill(barRect)
+      
+      // extract image
+      guard let spriteImage = UIGraphicsGetImageFromCurrentImageContext() else { return }
+      UIGraphicsEndImageContext()
+      
+      // set sprite texture and size
+      node.texture = SKTexture(image: spriteImage)
+      node.size = barSize
+    }
     
     func createWave() {
         guard isPlayerAlive else { return }
@@ -172,6 +244,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         if (!isPlayerAlive) {
            if let newScene = SKScene(fileNamed: "GameScene") {
@@ -197,6 +271,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let sequence = SKAction.sequence([movement, .removeFromParent()])
         shot.run(sequence)
         
+    }
+    
+    
+    func updatePlayer(_ dt: CFTimeInterval) {
+        
+        player.position = CGPoint(x:player.position.x + cos(player.zRotation) * 2.5 ,y:player.position.y + sin(player.zRotation) * 2.5)
+       
+        
+        if player.position.y < frame.minY + 35 {
+            player.position.y = frame.minY + 35
+        } else if player.position.y > frame.maxY-35 {
+            player.position.y = frame.maxY - 35
+        }
+        
+        if player.position.x < frame.minX + 80 {
+            player.position.x = frame.minX + 80
+        } else if player.position.x > frame.maxX-80 {
+            player.position.x = frame.maxX - 80
+
+                    }
+        
+        thruster1?.position = CGPoint(x: (player.position.x ) + 30 * cos(-player.zRotation) , y:   (player.position.y) - 0 * sin(-player.zRotation) )
+
+            
+      //  thruster1?.zRotation = player.zRotation
+        
+    
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
